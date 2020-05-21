@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--客户映射 指定到dao接口 -->
+<mapper namespace="com.deepexi.activity.mapper.ActivityTargetMapper">
+    <sql id="Base_Column_List">
+      id,      activity_id,      participate_type,      type,      type_id,      tenant_code,      created_at,      created_by,      updated_at,      updated_by,      version,      dr
+    </sql>
+
+    <update id="deleteByActivityId">
+        UPDATE ac_activity_target SET dr = 1, updated_at = NOW( ), updated_by = #{updateBy} WHERE dr = 0
+        AND activity_id = #{activityId}
+    </update>
+
+    <select id="selectByActivityId" resultType="com.deepexi.activity.domain.eo.ActivityTarget">
+        SELECT <include refid="Base_Column_List"/> FROM ac_activity_target WHERE dr = 0
+        <if test="tenantCode != null and tenantCode != ''">
+            AND tenant_code = #{tenantCode}
+        </if>
+        AND activity_id = #{activityId}
+        AND participate_type = #{participateType}
+    </select>
+
+</mapper>

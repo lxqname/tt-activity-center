@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--客户映射 指定到dao接口 -->
+<mapper namespace="com.deepexi.activity.mapper.MemberActivityMapper">
+    <sql id="Base_Column_List">
+      id,      activity_id,      activity_type,      activity_valid_time,      member_id,      boost_num,      status,      finish_time,      share_channel_id,      tenant_code,      created_at,      created_by,      updated_at,      updated_by,      version,      dr
+    </sql>
+
+    <update id="addBoostNum">
+        UPDATE ac_member_activity SET boost_num = boost_num + #{num}, updated_at = NOW( ), updated_by = #{updateBy}
+        WHERE dr = 0 AND id = #{id}
+    </update>
+
+    <update id="subBoostNum">
+        UPDATE ac_member_activity SET boost_num = boost_num - #{num}, updated_at = NOW( ), updated_by = #{updateBy}
+        WHERE dr = 0 AND id = #{id} AND boost_num <![CDATA[>=]]> #{num}
+    </update>
+
+    <update id="endToSuccess">
+        UPDATE ac_member_activity SET `status` = 1, finish_time = NOW( ), updated_at = NOW( ), updated_by = #{updateBy}
+        WHERE dr = 0 AND id = #{id} AND `status` = 2
+    </update>
+
+    <update id="endToFail">
+        UPDATE ac_member_activity SET `status` = 3, updated_at = NOW( ), updated_by = #{updateBy}
+        WHERE dr = 0 AND id = #{id} AND `status` = 2
+    </update>
+
+    <select id="findList" resultType="com.deepexi.activity.domain.dto.MemberActivityDto">
+        SELECT <include refid="Base_Column_List"/>, NOW( ) AS currentTime FROM ac_member_activity WHERE dr = 0
+        <if test="query.tenantCode != null and query.tenantCode != ''">
+            AND `tenant_code` = #{query.tenantCode}
+        </if>
+        <if test="query.activityId != null and query.activityId != ''">
+            AND `activity_id` = #{query.activityId}
+        </if>
+        <if test="query.activityType != null">
+            AND `activity_type` = #{query.activityType}
+        </if>
+        <if test="query.memberId != null and query.memberId != ''">
+            AND `member_id` = #{query.memberId}
+        </if>
+        <if test="query.memberIdList != null">
+            <foreach collection="query.memberIdList" index="index" item="memberId" open="AND `member_id` IN (" separator="," close=")">
+                #{memberId}
+            </foreach>
+        </if>
+        <if test="query.status != null">
+            AND `status` = #{query.status}
+        </if>
+        <if test="query.statusList != null">
+            <foreach collection="query.statusList" index="index" item="status" open="AND `status` IN (" separator="," close=")">
+                #{status}
+            </foreach>
+        </if>
+        <if test="query.boostMemberActivityId != null and query.boostMemberActivityId != ''">
+            UNION SELECT <include refid="Base_Column_List"/>, NOW( ) AS currentTime FROM ac_member_activity WHERE dr = 0
+            AND `id` = #{query.boostMemberActivityId}
+            <if test="query.statusList != null">
+                <foreach collection="query.statusList" index="index" item="status" open="AND `status` IN (" separator="," close=")">
+                    #{status}
+                </foreach>
+            </if>
+        </if>
+        ORDER BY created_at
+        <if test="query.sortAsc != 1">
+            DESC
+        </if>
+        <if test="query.sortAsc == 1">
+            ASC
+        </if>
+    </select>
+
+    <select id="findEoList" resultType="com.deepexi.activity.domain.eo.MemberActivity">
+        SELECT <include refid="Base_Column_List"/> FROM ac_member_activity WHERE dr = 0
+        <if test="query.tenantCode != null and query.tenantCode != ''">
+            AND `tenant_code` = #{query.tenantCode}
+        </if>
+        <if test="query.activityId != null and query.activityId != ''">
+            AND `activity_id` = #{query.activityId}
+        </if>
+        <if test="query.activityType != null">
+            AND `activity_type` = #{query.activityType}
+        </if>
+        <if test="query.memberId != null and query.memberId != ''">
+            AND `member_id` = #{query.memberId}
+        </if>
+        <if test="query.memberIdList != null">
+            <foreach collection="query.memberIdList" index="index" item="memberId" open="AND `member_id` IN (" separator="," close=")">
+                #{memberId}
+            </foreach>
+        </if>
+        <if test="query.status != null">
+            AND `status` = #{query.status}
+        </if>
+        <if test="query.statusList != null">
+            <foreach collection="query.statusList" index="index" item="status" open="AND `status` IN (" separator="," close=")">
+                #{status}
+            </foreach>
+        </if>
+        ORDER BY created_at DESC
+    </select>
+
+    <select id="count" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM ac_member_activity WHERE dr = 0
+        <if test="query.tenantCode != null and query.tenantCode != ''">
+            AND `tenant_code` = #{query.tenantCode}
+        </if>
+        <if test="query.activityId != null and query.activityId != ''">
+            AND `activity_id` = #{query.activityId}
+        </if>
+        <if test="query.memberId != null and query.memberId != ''">
+            AND `member_id` = #{query.memberId}
+        </if>
+        <if test="query.status != null and query.status != ''">
+            AND `status` = #{query.status}
+        </if>
+    </select>
+
+    <select id="selectOvertimeList" resultType="com.deepexi.activity.domain.eo.MemberActivity">
+        SELECT <include refid="Base_Column_List"/> FROM ac_member_activity WHERE dr = 0
+        AND `status` = 2
+        AND NOW( ) <![CDATA[>]]> DATE_ADD( created_at, INTERVAL ( activity_valid_time * 60 * 60 ) SECOND )
+    </select>
+
+    <select id="countAward" resultType="com.deepexi.activity.domain.dto.MemberAwardCountDto">
+        SELECT ma.member_id AS memberId,
+        sum( CASE WHEN mcr.verification_status = 0 THEN 1 ELSE 0 END ) AS 'pendingReceiveNum',
+	    sum( CASE WHEN mcr.verification_status = 1 THEN 1 ELSE 0 END ) AS 'pendingUseNum',
+	    sum( CASE WHEN mcr.verification_status = 3 THEN 1 ELSE 0 END ) AS 'usedNum',
+	    sum( CASE WHEN mcr.verification_status = 4 THEN 1 ELSE 0 END ) AS 'expiredNum',
+	    min( mcr.receive_time ) AS 'issueTime'
+        FROM ac_member_activity ma LEFT JOIN ac_member_coupon_relation mcr ON ma.activity_id = mcr.activity_id AND ma.member_id = mcr.member_id
+        WHERE ma.dr = 0 AND mcr.dr = 0
+        <if test="tenantCode != null and tenantCode != ''">
+            AND ma.tenant_code = #{tenantCode} AND mcr.tenant_code = #{tenantCode}
+        </if>
+        AND ma.activity_id = #{activityId}
+        <if test="memberIdList != null">
+            <foreach collection="memberIdList" index="index" item="memberId" open="AND ma.member_id IN (" separator="," close=")">
+                #{memberId}
+            </foreach>
+        </if>
+        GROUP BY ma.member_id
+        ORDER BY issueTime DESC
+    </select>
+
+    <select id="countMember" resultType="java.lang.Integer">
+        SELECT COUNT(DISTINCT member_id) FROM ac_member_activity WHERE dr = 0
+        <if test="tenantCode != null and tenantCode != ''">
+            AND `tenant_code` = #{tenantCode}
+        </if>
+        AND `activity_id` = #{activityId}
+    </select>
+
+    <select id="countByMemberActivityQueryDto" resultType="java.lang.Integer">
+        SELECT SUM(tmpcount) FROM (
+        SELECT COUNT(1) as tmpcount FROM ac_member_activity WHERE dr=0
+        <if test="queryDto.tenantCode != null and queryDto.tenantCode != ''">
+            AND `tenant_code` = #{queryDto.tenantCode}
+        </if>
+        <if test="queryDto.activityId != null and queryDto.activityId != ''">
+            AND `activity_id` = #{queryDto.activityId}
+        </if>
+        <if test="queryDto.activityType != null">
+            AND `activity_type` = #{queryDto.activityType}
+        </if>
+        <if test="queryDto.memberId != null and queryDto.memberId != ''">
+            AND `member_id` = #{queryDto.memberId}
+        </if>
+        <if test="queryDto.memberMobile != null and queryDto.memberMobile != ''">
+            AND `member_mobile`  LIKE CONCAT('%',#{queryDto.memberMobile},'%')
+        </if>
+        <if test="queryDto.status != null">
+            AND `status` = #{queryDto.status}
+        </if>
+        <if test="queryDto.statusList != null">
+            <foreach collection="queryDto.statusList" index="index" item="status" open="AND `status` IN (" separator="," close=")">
+                #{status}
+            </foreach>
+        </if>
+        <if test="queryDto.boostMemberActivityId != null and queryDto.boostMemberActivityId != ''">
+            UNION ALL SELECT COUNT(1) as tmpcount FROM ac_member_activity WHERE dr=0
+            AND `id` = #{queryDto.boostMemberActivityId}
+            <if test="queryDto.statusList != null">
+                <foreach collection="queryDto.statusList" index="index" item="status" open="AND `status` IN (" separator="," close=")">
+                    #{status}
+                </foreach>
+            </if>
+        </if>
+        ) as tmpcount
+    </select>
+
+</mapper>

@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--客户映射 指定到dao接口 -->
+<mapper namespace="com.deepexi.activity.mapper.LinkMapper">
+
+    <sql id="Base_Column_List">
+      id,      name,      type,      url,      wechat_number_id,      remark,      tenant_code,      created_at,      created_by,      updated_at,      updated_by,      version,      dr    </sql>
+    <select id="findList" resultType="com.deepexi.activity.domain.eo.Link">
+        SELECT <include refid="Base_Column_List"/> FROM ac_link WHERE dr=0
+    </select>
+    <insert id="batchInsert">
+        INSERT INTO ac_link
+        (        id,        name,        type,        url,        wechat_number_id,        remark,        tenant_code,        created_at,        created_by,        updated_at,        updated_by,        version,        dr)
+        VALUES
+        <foreach collection="eo" index="index" item="value" separator=",">
+            (            #{value.id},            #{value.name},            #{value.type},            #{value.url},            #{value.wechatNumberId},            #{value.remark},            #{value.tenantCode},            #{value.createdAt},            #{value.createdBy},            #{value.updatedAt},            #{value.updatedBy},            #{value.version},            #{value.dr})
+        </foreach>
+    </insert>
+    <update id="batchUpdate">
+        INSERT INTO ac_link
+        (        id,        name,        type,        url,        wechat_number_id,        remark,        tenant_code,        created_at,        created_by,        updated_at,        updated_by,        version,        dr)
+        VALUES
+        <foreach collection="eo" index="index" item="value" separator=",">
+            (            #{value.id},            #{value.name},            #{value.type},            #{value.url},            #{value.wechatNumberId},            #{value.remark},            #{value.tenantCode},            #{value.createdAt},            #{value.createdBy},            #{value.updatedAt},            #{value.updatedBy},            #{value.version},            #{value.dr})
+        </foreach>
+        ON DUPLICATE KEY UPDATE
+            id=values(id),            name=values(name),            type=values(type),            url=values(url),            wechat_number_id=values(wechat_number_id),            remark=values(remark),            tenant_code=values(tenant_code),            created_at=values(created_at),            created_by=values(created_by),            updated_at=values(updated_at),            updated_by=values(updated_by),            version=values(version),            dr=values(dr)    </update>
+    <update id="deleteByIds">
+        UPDATE ac_link set dr=1 where id in
+        <foreach collection="pks" index="index" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <select id="findListByNameAndType" resultType="com.deepexi.activity.domain.eo.Link">
+        SELECT <include refid="Base_Column_List"/> FROM ac_link WHERE dr = 0
+        <if test="query.tenantCode != null and query.tenantCode != ''">
+            AND `tenant_code` = #{query.tenantCode}
+        </if>
+        <if test="query.fuzzyName != null and query.fuzzyName != ''">
+            AND `name` LIKE CONCAT('%',#{query.fuzzyName},'%')
+        </if>
+        <if test="query.type != null">
+            AND `type` = #{query.type}
+        </if>
+        ORDER BY created_at DESC
+    </select>
+
+</mapper>

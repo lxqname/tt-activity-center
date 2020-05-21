@@ -1,0 +1,292 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--客户映射 指定到dao接口 -->
+<mapper namespace="com.deepexi.activity.mapper.ActivityMapper">
+    <sql id="Base_Column_List">
+      id,      type,      name,      start_time_type,      start_time,      real_start_time,      end_time,      real_end_time,      trail_time,      valid_time,      boost_award_issue_type,      thumbnail_url,      image_url,      boost_image_url,      invite_image_url,      promotion_image_url,      topic_image_url,      description,      boost_description,      platform_promotion,      channel_promotion,      status,      application_type,      tenant_code,      created_at,      created_by,      updated_at,      updated_by,      version,      dr
+    </sql>
+
+    <update id="deleteByIds">
+        UPDATE ac_activity SET dr = 1, updated_at = NOW( ), updated_by = #{updateBy} WHERE dr = 0 AND id IN
+        <foreach collection="idList" index="index" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <update id="start">
+        UPDATE ac_activity SET `status` = 3, real_start_time = NOW( ),  updated_at = NOW( ), updated_by = "system"
+        WHERE dr = 0 AND `status` = 2 AND start_time <![CDATA[<]]> NOW( )
+    </update>
+
+    <update id="startById">
+        UPDATE ac_activity SET `status` = 3, real_start_time = NOW( ),  updated_at = NOW( ), updated_by = #{updateBy}
+        WHERE dr = 0 AND `status` = 2 AND start_time <![CDATA[<]]> NOW( ) AND id = #{id}
+    </update>
+
+    <update id="end">
+        UPDATE ac_activity SET `status` = 4, real_end_time = NOW( ), updated_at = NOW( ), updated_by = #{updateBy}
+        WHERE dr = 0 AND id = #{id} AND `status` != 4
+    </update>
+
+    <select id="findList" resultType="com.deepexi.activity.domain.dto.ActivityListDto">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM ac_activity WHERE dr = 0
+        <if test="query.tenantCode != null and query.tenantCode != ''">
+            AND `tenant_code` = #{query.tenantCode}
+        </if>
+        <if test="query.createTimeLeftRange != null">
+            AND `created_at` <![CDATA[>=]]> #{query.createTimeLeftRange}
+        </if>
+        <if test="query.createTimeRightRange != null">
+            AND `created_at` <![CDATA[<=]]> #{query.createTimeRightRange}
+        </if>
+        <if test="query.idList != null">
+            <foreach collection="query.idList" index="index" item="id" open="AND `id` IN (" separator="," close=")">
+                #{id}
+            </foreach>
+        </if>
+        <if test="query.type != null">
+            AND `type` = #{query.type}
+        </if>
+        <if test="query.typeList != null">
+            <foreach collection="query.typeList" index="index" item="type" open="AND `type` IN (" separator=","
+                     close=")">
+                #{type}
+            </foreach>
+        </if>
+        <if test="query.fuzzyName != null and query.fuzzyName != ''">
+            AND `name` LIKE CONCAT('%',#{query.fuzzyName},'%')
+        </if>
+        <if test="query.startTimeLeftRange != null">
+            AND `start_time` <![CDATA[>=]]> #{query.startTimeLeftRange}
+        </if>
+        <if test="query.startTimeRightRange != null">
+            AND `start_time` <![CDATA[<=]]> #{query.startTimeRightRange}
+        </if>
+        <if test="query.realStartTimeLeftRange != null">
+            AND real_start_time <![CDATA[>=]]> #{query.realStartTimeLeftRange}
+        </if>
+        <if test="query.realStartTimeRightRange != null">
+            AND real_start_time <![CDATA[<=]]> #{query.realStartTimeRightRange}
+        </if>
+        <if test="query.endTimeLeftRange != null">
+            AND `end_time` <![CDATA[>=]]> #{query.endTimeLeftRange}
+        </if>
+        <if test="query.endTimeRightRange != null">
+            AND `end_time` <![CDATA[<=]]> #{query.endTimeRightRange}
+        </if>
+        <if test="query.status != null">
+            AND `status` = #{query.status}
+        </if>
+        <if test="query.statusList != null">
+            <foreach collection="query.statusList" index="index" item="status" open="AND `status` IN (" separator=","
+                     close=")">
+                #{status}
+            </foreach>
+        </if>
+        <if test="query.applicationType != null">
+            AND application_type = #{query.applicationType}
+        </if>
+        ORDER BY created_at DESC
+    </select>
+
+    <select id="findListByProcessingAndPendingStart" resultType="com.deepexi.activity.domain.dto.ActivityH5Dto">
+        SELECT<include refid="Base_Column_List"/>, NOW( ) AS currentTime, ( NOW( ) - start_time ) AS temptime
+        FROM ac_activity WHERE dr = 0 AND `status` = 3
+        <if test="query.tenantCode != null and query.tenantCode != ''">
+            AND `tenant_code` = #{query.tenantCode}
+        </if>
+        <if test="query.idList != null">
+            <foreach collection="query.idList" index="index" item="id" open="AND `id` IN (" separator="," close=")">
+                #{id}
+            </foreach>
+        </if>
+        <if test="query.type != null">
+            AND `type` = #{query.type}
+        </if>
+        <if test="query.typeList != null">
+            <foreach collection="query.typeList" index="index" item="type" open="AND `type` IN (" separator=","
+                     close=")">
+                #{type}
+            </foreach>
+        </if>
+        <if test="query.fuzzyName != null and query.fuzzyName != ''">
+            AND `name` LIKE CONCAT('%',#{query.fuzzyName},'%')
+        </if>
+        <if test="query.platformPromotion != null">
+            AND `platform_promotion` = #{query.platformPromotion}
+        </if>
+        UNION
+        SELECT<include refid="Base_Column_List"/>, NOW( ) AS currentTime, ( NOW( ) - start_time ) AS temptime
+        FROM ac_activity WHERE dr = 0 AND `status` = 2
+        <if test="query.tenantCode != null and query.tenantCode != ''">
+            AND `tenant_code` = #{query.tenantCode}
+        </if>
+        <if test="query.idList != null">
+            <foreach collection="query.idList" index="index" item="id" open="AND `id` IN (" separator="," close=")">
+                #{id}
+            </foreach>
+        </if>
+        <if test="query.type != null">
+            AND `type` = #{query.type}
+        </if>
+        <if test="query.typeList != null">
+            <foreach collection="query.typeList" index="index" item="type" open="AND `type` IN (" separator=","
+                     close=")">
+                #{type}
+            </foreach>
+        </if>
+        <if test="query.fuzzyName != null and query.fuzzyName != ''">
+            AND `name` LIKE CONCAT('%',#{query.fuzzyName},'%')
+        </if>
+        <if test="query.platformPromotion != null">
+            AND `platform_promotion` = #{query.platformPromotion}
+        </if>
+        AND start_time <![CDATA[<]]> DATE_ADD( NOW( ), INTERVAL trail_time HOUR )
+        ORDER BY `status` DESC, temptime ASC
+    </select>
+
+    <select id="selectOvertimeActivities" resultType="com.deepexi.activity.domain.eo.Activity">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM ac_activity
+        WHERE dr = 0 AND `status` = 3 AND end_time <![CDATA[<]]> #{date}
+    </select>
+
+    <select id="selectIssueCouponActivities" resultType="com.deepexi.activity.domain.eo.Activity">
+        SELECT <include refid="Base_Column_List"/> FROM ac_activity
+        WHERE dr = 0 AND `type` = 3 AND `status` = 3
+    </select>
+
+    <select id="selectProcessingNewMemberActivities" resultType="com.deepexi.activity.domain.eo.Activity">
+        SELECT <include refid="Base_Column_List"/> FROM ac_activity
+        WHERE dr = 0 AND `type` = 4 AND `status` = 3
+        <if test="tenantCode != null and tenantCode != ''">
+            AND `tenant_code` = #{tenantCode}
+        </if>
+    </select>
+
+    <select id="selectOverlappingActivityIdList" resultType="java.lang.String">
+        SELECT id FROM ac_activity WHERE dr = 0
+        AND start_time <![CDATA[<=]]> #{startTime} AND end_time <![CDATA[>=]]> #{startTime}
+        <if test="tenantCode != null and tenantCode != ''">
+            AND `tenant_code` = #{tenantCode}
+        </if>
+        <if test="type != null">
+            AND `type` = #{type}
+        </if>
+        <if test="statusList != null">
+            <foreach collection="statusList" index="index" item="status" open="AND `status` IN (" separator=","
+                     close=")">
+                #{status}
+            </foreach>
+        </if>
+        UNION
+        SELECT id FROM ac_activity WHERE dr = 0
+        AND start_time <![CDATA[<=]]> #{endTime} AND end_time <![CDATA[>=]]> #{endTime}
+        <if test="tenantCode != null and tenantCode != ''">
+            AND `tenant_code` = #{tenantCode}
+        </if>
+        <if test="type != null">
+            AND `type` = #{type}
+        </if>
+        <if test="statusList != null">
+            <foreach collection="statusList" index="index" item="status" open="AND `status` IN (" separator=","
+                     close=")">
+                #{status}
+            </foreach>
+        </if>
+        UNION
+        SELECT id FROM ac_activity WHERE dr = 0
+        AND start_time <![CDATA[<=]]> #{startTime} AND end_time <![CDATA[>=]]> #{endTime}
+        <if test="tenantCode != null and tenantCode != ''">
+            AND `tenant_code` = #{tenantCode}
+        </if>
+        <if test="type != null">
+            AND `type` = #{type}
+        </if>
+        <if test="statusList != null">
+            <foreach collection="statusList" index="index" item="status" open="AND `status` IN (" separator=","
+                     close=")">
+                #{status}
+            </foreach>
+        </if>
+    </select>
+
+    <select id="findListByTypeInAndChannelPromotionIn" resultType="com.deepexi.activity.domain.eo.Activity">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM ac_activity
+        WHERE dr = 0
+        <if test="typeList != null">
+            <foreach collection="typeList" index="index" item="type" open="And `type` IN (" separator="," close=")">
+                #{type}
+            </foreach>
+        </if>
+        <if test="channelPromotionList != null">
+            <foreach collection="channelPromotionList" index="index" item="channelPromotion"
+                     open="And `channelPromotion` IN (" separator="," close=")">
+                #{channelPromotion}
+            </foreach>
+        </if>
+        order by `updated_at` DESC
+    </select>
+
+    <select id="selectActivityMarketList" resultType="com.deepexi.activity.domain.eo.Activity">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM ac_activity
+        WHERE dr = 0 AND TYPE IN ( 1 ,2 ) AND channel_promotion = 1 AND status = 3
+        UNION
+        SELECT * from ac_activity
+        WHERE dr = 0 AND TYPE IN (1,2 ) AND channel_promotion = 2 AND status = 3 AND id IN ( SELECT activity_id from
+        ac_activity_channel WHERE dr = 0 and channel_id = #{channelId} )
+        ORDER BY updated_by DESC
+    </select>
+
+    <select id="findAuditList" resultType="com.deepexi.activity.domain.dto.ActivityListDto">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM ac_activity WHERE dr = 0 and type in (1,2,3) and application_type = 2
+        <if test="query.tenantCode != null and query.tenantCode != ''">
+            AND `tenant_code` = #{query.tenantCode}
+        </if>
+        <if test="query.fuzzyName != null and query.fuzzyName != ''">
+            AND `name` LIKE CONCAT('%',#{query.fuzzyName},'%')
+        </if>
+        <if test="query.startTimeLeftRange != null">
+            AND `start_time` <![CDATA[>=]]> #{query.startTimeLeftRange}
+        </if>
+        <if test="query.startTimeRightRange != null">
+            AND `start_time` <![CDATA[<=]]> #{query.startTimeRightRange}
+        </if>
+        <if test="query.realStartTimeLeftRange != null">
+            AND real_start_time <![CDATA[>=]]> #{query.realStartTimeLeftRange}
+        </if>
+        <if test="query.realStartTimeRightRange != null">
+            AND real_start_time <![CDATA[<=]]> #{query.realStartTimeRightRange}
+        </if>
+        <if test="query.endTimeLeftRange != null">
+            AND `end_time` <![CDATA[>=]]> #{query.endTimeLeftRange}
+        </if>
+        <if test="query.endTimeRightRange != null">
+            AND `end_time` <![CDATA[<=]]> #{query.endTimeRightRange}
+        </if>
+        <choose>
+            <when test="query.statusList != null">
+                <foreach collection="query.statusList" index="index" item="status" open="AND `status` IN (" separator=","
+                             close=")">
+                        #{status}
+                 </foreach>
+            </when>
+            <otherwise>
+                AND `status` in (1,2,3,5)
+            </otherwise>
+        </choose>
+        ORDER BY created_at DESC
+    </select>
+
+
+</mapper>

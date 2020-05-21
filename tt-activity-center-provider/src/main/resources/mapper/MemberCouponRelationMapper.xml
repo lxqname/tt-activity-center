@@ -1,0 +1,293 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--客户映射 指定到dao接口 -->
+<mapper namespace="com.deepexi.activity.mapper.MemberCouponRelationMapper">
+    <sql id="Base_Column_List">
+      id,      member_id,      coupon_id,      coupon_use_time_flag,      coupon_use_start_time,      coupon_use_end_time,      coupon_valid_day,      coupon_unique_code,      coupon_package_id,      activity_coupon_relation_id,      activity_id,      product_id,      order_id,      order_award_id,      verification_status,      receive_type,      receive_time,      verification_time,      verification_person_account_id,      verification_store_id,      tenant_code,      created_at,      created_by,      updated_at,      updated_by,      version,      dr
+    </sql>
+
+    <update id="receive">
+        UPDATE ac_member_coupon_relation SET verification_status = 1, receive_time = NOW( ), updated_at = NOW( ), updated_by = #{updateBy}
+        WHERE dr = 0 AND member_id = #{memberId} AND verification_status = 0 AND id IN
+        <foreach collection="idList" index="index" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <update id="use">
+        UPDATE ac_member_coupon_relation SET verification_status = 3, verification_time = NOW( ), verification_person_account_id = #{updateBy},
+        verification_store_id = #{storeId}, updated_at = NOW( ), updated_by = #{updateBy}
+        WHERE dr = 0 AND verification_status = 1 AND id = #{id}
+    </update>
+
+    <update id="updateReservation">
+        UPDATE ac_member_coupon_relation SET verification_status = #{verificationStatus}, receive_time = ( CASE WHEN verification_status = 1 THEN NOW( ) ELSE NULL END ), updated_at = NOW( ), updated_by = #{updateBy}
+        WHERE dr = 0 AND id = #{id} AND verification_status = -1
+    </update>
+
+    <update id="expire">
+        UPDATE ac_member_coupon_relation SET verification_status = 4, updated_at = NOW( ), updated_by = #{updateBy}
+        WHERE dr = 0 AND id = #{id} AND verification_status = 1
+    </update>
+
+    <update id="deleteByIds">
+        UPDATE ac_member_coupon_relation SET dr = 1, updated_at = NOW( ), updated_by = #{updateBy} WHERE dr = 0 AND id IN
+        <foreach collection="idList" index="index" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <select id="findList" resultType="com.deepexi.activity.domain.dto.MemberCouponRelationListDto">
+        SELECT <include refid="Base_Column_List"/> FROM ac_member_coupon_relation WHERE dr = 0
+        <if test="query.tenantCode != null and query.tenantCode != ''">
+            AND `tenant_code` = #{query.tenantCode}
+        </if>
+        <if test="query.idList != null">
+            <foreach collection="query.idList" index="index" item="id" open="AND `id` IN (" separator="," close=")">
+                #{id}
+            </foreach>
+        </if>
+        <if test="query.memberId != null and query.memberId != ''">
+            AND `member_id` = #{query.memberId}
+        </if>
+        <if test="query.memberIdList != null">
+            <foreach collection="query.memberIdList" index="index" item="memberId" open="AND `member_id` IN (" separator="," close=")">
+                #{memberId}
+            </foreach>
+        </if>
+        <if test="query.couponId != null and query.couponId != ''">
+            AND `coupon_id` = #{query.couponId}
+        </if>
+        <if test="query.couponIdList != null">
+            <foreach collection="query.couponIdList" index="index" item="couponId" open="AND `coupon_id` IN (" separator="," close=")">
+                #{couponId}
+            </foreach>
+        </if>
+        <if test="query.couponPackageId != null and query.couponPackageId != ''">
+            AND `coupon_package_id` = #{query.couponPackageId}
+        </if>
+        <if test="query.activityCouponRelationId != null and query.activityCouponRelationId != ''">
+            AND `activity_coupon_relation_id` = #{query.activityCouponRelationId}
+        </if>
+        <if test="query.activityId != null and query.activityId != ''">
+            AND `activity_id` = #{query.activityId}
+        </if>
+        <if test="query.productId != null and query.productId != ''">
+            AND `product_id` = #{query.productId}
+        </if>
+        <if test="query.orderId != null and query.orderId != ''">
+            AND `order_id` = #{query.orderId}
+        </if>
+        <if test="query.orderAwardId != null and query.orderAwardId != ''">
+            AND `order_award_id` = #{query.orderAwardId}
+        </if>
+        <if test="query.verificationStatus != null">
+            AND `verification_status` = #{query.verificationStatus}
+        </if>
+        <if test="query.verificationTimeLeftRange != null">
+            AND `verification_time` <![CDATA[>=]]> #{query.verificationTimeLeftRange}
+        </if>
+        <if test="query.verificationTimeRightRange != null">
+            AND `verification_time` <![CDATA[<=]]> #{query.verificationTimeRightRange}
+        </if>
+        <if test="query.verificationPersonAccountId != null and query.verificationPersonAccountId != ''">
+            AND `verification_person_account_id` = #{query.verificationPersonAccountId}
+        </if>
+        <if test="query.sortType == 2">
+            ORDER BY verification_time DESC
+        </if>
+        <if test="query.sortType == null">
+            ORDER BY created_at DESC
+        </if>
+    </select>
+
+    <select id="findIdList" resultType="java.lang.String">
+        SELECT DISTINCT id FROM ac_member_coupon_relation WHERE dr = 0
+        <if test="query.tenantCode != null and query.tenantCode != ''">
+            AND `tenant_code` = #{query.tenantCode}
+        </if>
+        <if test="query.memberId != null and query.memberId != ''">
+            AND `member_id` = #{query.memberId}
+        </if>
+        <if test="query.memberIdList != null">
+            <foreach collection="query.memberIdList" index="index" item="memberId" open="AND `member_id` IN (" separator="," close=")">
+                #{memberId}
+            </foreach>
+        </if>
+        <if test="query.couponId != null and query.couponId != ''">
+            AND `coupon_id` = #{query.couponId}
+        </if>
+        <if test="query.couponIdList != null">
+            <foreach collection="query.couponIdList" index="index" item="couponId" open="AND `coupon_id` IN (" separator="," close=")">
+                #{couponId}
+            </foreach>
+        </if>
+        <if test="query.couponPackageId != null and query.couponPackageId != ''">
+            AND `coupon_package_id` = #{query.couponPackageId}
+        </if>
+        <if test="query.activityCouponRelationId != null and query.activityCouponRelationId != ''">
+            AND `activity_coupon_relation_id` = #{query.activityCouponRelationId}
+        </if>
+        <if test="query.activityId != null and query.activityId != ''">
+            AND `activity_id` = #{query.activityId}
+        </if>
+        <if test="query.productId != null and query.productId != ''">
+            AND `product_id` = #{query.productId}
+        </if>
+        <if test="query.orderId != null and query.orderId != ''">
+            AND `order_id` = #{query.orderId}
+        </if>
+        <if test="query.orderAwardId != null and query.orderAwardId != ''">
+            AND `order_award_id` = #{query.orderAwardId}
+        </if>
+        <if test="query.verificationStatus != null">
+            AND `verification_status` = #{query.verificationStatus}
+        </if>
+        <if test="query.verificationTimeLeftRange != null">
+            AND `verification_time` <![CDATA[>=]]> #{query.verificationTimeLeftRange}
+        </if>
+        <if test="query.verificationTimeRightRange != null">
+            AND `verification_time` <![CDATA[<=]]> #{query.verificationTimeRightRange}
+        </if>
+        <if test="query.verificationPersonAccountId != null and query.verificationPersonAccountId != ''">
+            AND `verification_person_account_id` = #{query.verificationPersonAccountId}
+        </if>
+    </select>
+
+    <select id="count" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM ac_member_coupon_relation WHERE dr = 0
+        <if test="query.tenantCode != null and query.tenantCode != ''">
+            AND `tenant_code` = #{query.tenantCode}
+        </if>
+        <if test="query.memberId != null and query.memberId != ''">
+            AND `member_id` = #{query.memberId}
+        </if>
+        <if test="query.activityCouponRelationId != null and query.activityCouponRelationId != ''">
+            AND `activity_coupon_relation_id` = #{query.activityCouponRelationId}
+        </if>
+        <if test="query.activityId != null and query.activityId != ''">
+            AND `activity_id` = #{query.activityId}
+        </if>
+        <if test="query.verificationStatus != null">
+            AND `verification_status` = #{query.verificationStatus}
+        </if>
+    </select>
+
+    <select id="selectActivityAwardList"
+            resultType="com.deepexi.activity.domain.dto.MemberCouponAndPackageDto">
+        SELECT id AS idListStr, 1 AS type, coupon_id AS typeId, activity_coupon_relation_id AS activityCouponRelationId,
+	    activity_id AS activityId, verification_status AS verificationStatus, created_at AS createdAt
+        FROM ac_member_coupon_relation WHERE dr = 0 AND coupon_package_id IS NULL
+        <if test="query.tenantCode != null and query.tenantCode != ''">
+            AND `tenant_code` = #{query.tenantCode}
+        </if>
+        <if test="query.memberId != null and query.memberId != ''">
+            AND `member_id` = #{query.memberId}
+        </if>
+        <if test="query.activityCouponRelationId != null and query.activityCouponRelationId != ''">
+            AND `activity_coupon_relation_id` = #{query.activityCouponRelationId}
+        </if>
+        <if test="query.activityId != null and query.activityId != ''">
+            AND `activity_id` = #{query.activityId}
+        </if>
+        <if test="query.verificationStatus != null">
+            AND verification_status = #{query.verificationStatus}
+        </if>
+        UNION ALL
+	    ( SELECT GROUP_CONCAT( id ) AS idListStr, 2 AS type, coupon_package_id AS typeId, activity_coupon_relation_id AS activityCouponRelationId,
+	    activity_id AS activityId, verification_status AS verificationStatus, created_at AS createdAt
+        FROM ac_member_coupon_relation WHERE dr = 0 AND coupon_package_id IS NOT NULL
+        <if test="query.tenantCode != null and query.tenantCode != ''">
+            AND `tenant_code` = #{query.tenantCode}
+        </if>
+        <if test="query.memberId != null and query.memberId != ''">
+            AND `member_id` = #{query.memberId}
+        </if>
+        <if test="query.activityCouponRelationId != null and query.activityCouponRelationId != ''">
+            AND `activity_coupon_relation_id` = #{query.activityCouponRelationId}
+        </if>
+        <if test="query.activityId != null and query.activityId != ''">
+            AND `activity_id` = #{query.activityId}
+        </if>
+        <if test="query.verificationStatus != null">
+            AND verification_status = #{query.verificationStatus}
+        </if>
+        GROUP BY activity_id, activity_coupon_relation_id, verification_status )
+        ORDER BY createdAt DESC
+    </select>
+
+    <select id="countNumByStatus" resultType="com.deepexi.activity.domain.dto.IdNumDto">
+        SELECT coupon_id AS id, count( * ) AS num
+        FROM ac_member_coupon_relation
+        WHERE dr = 0
+        <if test="tenantCode != null and tenantCode != ''">
+            AND `tenant_code` = #{tenantCode}
+        </if>
+        AND activity_id = #{activityId}
+	    AND verification_status = #{verificationStatus}
+        GROUP BY coupon_id
+    </select>
+
+    <select id="findMyCouponList" resultType="com.deepexi.activity.domain.dto.MemberCouponH5Dto">
+        SELECT <include refid="Base_Column_List"/>,
+        ( CASE coupon_use_time_flag WHEN 1 THEN coupon_use_start_time WHEN 2 THEN receive_time ELSE NULL END ) AS useStartTime,
+        ( CASE coupon_use_time_flag WHEN 1 THEN coupon_use_end_time WHEN 2 THEN DATE_ADD( receive_time, INTERVAL coupon_valid_day DAY ) ELSE NULL END ) AS useEndTime,
+        ( CASE coupon_use_time_flag WHEN 1 THEN coupon_use_end_time <![CDATA[<]]> DATE_ADD( NOW( ), INTERVAL 3 DAY )
+            WHEN 2 THEN DATE_ADD( receive_time, INTERVAL coupon_valid_day DAY ) <![CDATA[<]]> DATE_ADD( NOW( ), INTERVAL 3 DAY ) ELSE 0 END ) AS expireSoon
+        <if test="query.sortType == 1">
+            ,( CASE WHEN coupon_use_time_flag = 1 AND coupon_use_end_time <![CDATA[<]]> DATE_ADD( NOW( ), INTERVAL 3 DAY ) THEN coupon_use_end_time - now( )
+            WHEN coupon_use_time_flag = 2 AND DATE_ADD( receive_time, INTERVAL coupon_valid_day DAY ) <![CDATA[<]]> DATE_ADD( NOW( ), INTERVAL 3 DAY ) THEN
+            DATE_ADD( receive_time, INTERVAL coupon_valid_day DAY ) - now( ) ELSE now( ) - receive_time END ) AS tempTime
+        </if>
+        FROM ac_member_coupon_relation
+        WHERE dr = 0
+        <if test="query.tenantCode != null and query.tenantCode != ''">
+            AND `tenant_code` = #{query.tenantCode}
+        </if>
+        <if test="query.memberId != null and query.memberId != ''">
+            AND `member_id` = #{query.memberId}
+        </if>
+        <if test="query.verificationStatus != null">
+            AND `verification_status` = #{query.verificationStatus}
+        </if>
+        <if test="query.verificationStatusList != null">
+            <foreach collection="query.verificationStatusList" index="index" item="verificationStatus" open="AND `verification_status` IN (" separator="," close=")">
+                #{verificationStatus}
+            </foreach>
+        </if>
+        <if test="query.sortType == 1">
+            ORDER BY expireSoon DESC, tempTime ASC
+        </if>
+        <if test="query.sortType == 2">
+            ORDER BY verification_time DESC
+        </if>
+        <if test="query.sortType == 3">
+            ORDER BY useEndTime DESC
+        </if>
+        <if test="query.sortType == null">
+            ORDER BY created_at DESC
+        </if>
+    </select>
+
+    <select id="findExpireSoonList" resultType="com.deepexi.activity.domain.eo.MemberCouponRelation">
+        SELECT <include refid="Base_Column_List"/> FROM ac_member_coupon_relation WHERE dr = 0 AND verification_status = 1
+	    AND coupon_use_time_flag = 1
+	    AND coupon_use_end_time BETWEEN DATE_ADD( NOW( ), INTERVAL 3 DAY ) AND DATE_ADD( NOW( ), INTERVAL 4 DAY )
+	    UNION
+        SELECT <include refid="Base_Column_List"/> FROM ac_member_coupon_relation WHERE dr = 0 AND verification_status = 1
+	    AND coupon_use_time_flag = 2
+	    AND DATE_ADD( receive_time, INTERVAL coupon_valid_day DAY ) BETWEEN DATE_ADD( NOW( ), INTERVAL 3 DAY ) AND DATE_ADD( NOW( ), INTERVAL 4 DAY )
+    </select>
+
+    <select id="selectUnusedExpiredList" resultType="com.deepexi.activity.domain.eo.MemberCouponRelation">
+        SELECT <include refid="Base_Column_List"/> FROM ac_member_coupon_relation WHERE dr = 0 AND verification_status = 1
+        AND coupon_use_time_flag = 1
+        AND coupon_use_end_time <![CDATA[<]]> NOW( )
+        UNION
+        SELECT <include refid="Base_Column_List"/> FROM ac_member_coupon_relation WHERE dr = 0 AND verification_status = 1
+        AND coupon_use_time_flag = 2
+        AND DATE_ADD( receive_time, INTERVAL coupon_valid_day DAY ) <![CDATA[<]]> NOW( )
+    </select>
+
+</mapper>

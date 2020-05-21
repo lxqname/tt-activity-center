@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--客户映射 指定到dao接口 -->
+<mapper namespace="com.deepexi.activity.mapper.ActivityChannelMapper">
+    <sql id="Base_Column_List">
+      id,      activity_id,      channel_id,      tenant_code,      created_at,      created_by,      updated_at,      updated_by,      version,      dr
+    </sql>
+
+    <update id="deleteByActivityId">
+        UPDATE ac_activity_channel SET dr = 1, updated_at = NOW( ), updated_by = #{updateBy} WHERE dr = 0
+        AND activity_id = #{activityId}
+    </update>
+
+    <select id="selectChannelIdList" resultType="java.lang.String">
+        SELECT DISTINCT channel_id FROM ac_activity_channel WHERE dr = 0 AND activity_id = #{activityId}
+        <if test="tenantCode != null and tenantCode != ''">
+            AND tenant_code = #{tenantCode}
+        </if>
+    </select>
+
+</mapper>

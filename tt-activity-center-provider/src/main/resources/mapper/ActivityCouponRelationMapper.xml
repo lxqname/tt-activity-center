@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--客户映射 指定到dao接口 -->
+<mapper namespace="com.deepexi.activity.mapper.ActivityCouponRelationMapper">
+    <sql id="Base_Column_List">
+      id,      activity_id,      type,      type_id,      title,      complete_num,      num,      remain_num,      receive_type,      receive_description,      receive_limit_num,      tenant_code,      created_at,      created_by,      updated_at,      updated_by,      version,      dr
+    </sql>
+
+    <update id="deleteByActivityId">
+        UPDATE ac_activity_coupon_relation SET dr = 1, updated_at = NOW( ), updated_by = #{updateBy} WHERE dr = 0
+        AND activity_id = #{activityId}
+    </update>
+
+    <update id="addNum">
+        UPDATE ac_activity_coupon_relation SET num = num + #{num}, remain_num = remain_num + #{num}, updated_at = NOW( ), updated_by = #{updateBy}
+        WHERE dr = 0 AND id = #{id}
+    </update>
+
+    <update id="subRemainNum">
+        UPDATE ac_activity_coupon_relation SET remain_num = remain_num - #{num}, updated_at = NOW( ), updated_by = #{updateBy}
+        WHERE dr = 0 AND id = #{id} AND remain_num <![CDATA[>=]]> #{num}
+    </update>
+
+    <update id="addRemainNum">
+        UPDATE ac_activity_coupon_relation SET remain_num = remain_num + #{num}, updated_at = NOW( ), updated_by = #{updateBy}
+        WHERE dr = 0 AND id = #{id} AND num <![CDATA[>=]]> remain_num + #{num}
+    </update>
+
+    <select id="selectByActivityId" resultType="com.deepexi.activity.domain.dto.ActivityAwardDto">
+        SELECT <include refid="Base_Column_List"/> FROM ac_activity_coupon_relation WHERE  dr = 0
+        <if test="tenantCode != null and tenantCode != ''">
+            AND tenant_code = #{tenantCode}
+        </if>
+        AND activity_id = #{activityId}
+        ORDER BY complete_num ASC
+    </select>
+
+    <select id="selectLatestComplete" resultType="com.deepexi.activity.domain.dto.ActivityAwardDto">
+        SELECT <include refid="Base_Column_List"/> FROM ac_activity_coupon_relation WHERE  dr = 0
+        <if test="tenantCode != null and tenantCode != ''">
+            AND tenant_code = #{tenantCode}
+        </if>
+        AND activity_id = #{activityId}
+        <if test="completeNum != null">
+            AND complete_num <![CDATA[<=]]> #{completeNum}
+        </if>
+        ORDER BY complete_num DESC
+        LIMIT 1
+    </select>
+
+    <select id="selectLowestUnComplete" resultType="com.deepexi.activity.domain.dto.ActivityAwardDto">
+        SELECT <include refid="Base_Column_List"/> FROM ac_activity_coupon_relation WHERE  dr = 0
+        <if test="tenantCode != null and tenantCode != ''">
+            AND tenant_code = #{tenantCode}
+        </if>
+        AND activity_id = #{activityId}
+        <if test="completeNum != null">
+            AND complete_num <![CDATA[>]]> #{completeNum}
+        </if>
+        ORDER BY complete_num ASC
+        LIMIT 1
+    </select>
+
+    <select id="selectTypeIdList" resultType="java.lang.String">
+        SELECT DISTINCT type_id FROM ac_activity_coupon_relation WHERE dr = 0
+        <if test="tenantCode != null and tenantCode != ''">
+            AND tenant_code = #{tenantCode}
+        </if>
+        <if test="type != null">
+            AND type = #{type}
+        </if>
+    </select>
+
+    <select id="countByTypeAndTypeId" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM ac_activity_coupon_relation WHERE dr = 0
+        <if test="tenantCode != null and tenantCode != ''">
+            AND tenant_code = #{tenantCode}
+        </if>
+        AND type = #{type}
+        AND type_id = #{typeId}
+    </select>
+
+    <select id="selectActivityIdList" resultType="java.lang.String">
+        SELECT DISTINCT activity_id FROM ac_activity_coupon_relation WHERE dr = 0
+        <if test="tenantCode != null and tenantCode != ''">
+            AND tenant_code = #{tenantCode}
+        </if>
+        <foreach collection="typeIdList" index="index" item="typeId" open="AND type_id IN (" separator="," close=")">
+            #{typeId}
+        </foreach>
+    </select>
+
+    <select id="selectAllCompleteRelation" resultType="com.deepexi.activity.domain.eo.ActivityCouponRelation">
+        SELECT acr.* FROM ac_activity_coupon_relation acr, ac_member_coupon_relation mcr
+        WHERE acr.dr = 0 AND mcr.dr = 0 AND acr.id = mcr.activity_coupon_relation_id
+        <if test="tenantCode != null and tenantCode != ''">
+            AND acr.tenant_code = #{tenantCode} AND acr.tenant_code = #{tenantCode}
+        </if>
+        AND mcr.member_id = #{memberId}
+        AND mcr.activity_id = #{activityId}
+        GROUP BY acr.id
+        ORDER BY acr.complete_num ASC
+    </select>
+
+</mapper>

@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--客户映射 指定到dao接口 -->
+<mapper namespace="com.deepexi.activity.mapper.ActivityRemindMapper">
+    <sql id="Base_Column_List">
+      id,      activity_id,      member_id,      send_success,      remark,      tenant_code,      created_at,      created_by,      updated_at,      updated_by,      version,      dr
+    </sql>
+
+    <update id="deleteByMemberIdAndActivityId">
+        UPDATE ac_activity_remind SET dr = 1, updated_at = NOW( ), updated_by = #{updateBy}
+        WHERE dr = 0 AND activity_id = #{activityId} AND member_id = #{memberId}
+    </update>
+
+    <select id="count" resultType="java.lang.Integer">
+        SELECT COUNT( * ) FROM ac_activity_remind WHERE dr = 0
+        AND activity_id = #{activityId}
+        AND member_id = #{memberId}
+        <if test="tenantCode != null and tenantCode != ''">
+            AND tenant_code = #{tenantCode}
+        </if>
+    </select>
+
+    <select id="selectActivityIdList" resultType="java.lang.String">
+        SELECT DISTINCT activity_id FROM ac_activity_remind WHERE dr = 0
+        <if test="tenantCode != null and tenantCode != ''">
+            AND tenant_code = #{tenantCode}
+        </if>
+        <if test="activityIdList != null">
+            <foreach collection="activityIdList" index="index" item="activityId" open="AND activity_id IN (" separator="," close=")">
+                #{activityId}
+            </foreach>
+        </if>
+        <if test="memberId != null and memberId != ''">
+            AND member_id = #{memberId}
+        </if>
+    </select>
+
+    <select id="findRemindActivity" resultType="com.deepexi.activity.domain.dto.ActivityRemindDto">
+        SELECT ar.tenant_code AS tenantCode, ar.id AS id, ar.activity_id AS activityId, ar.member_id AS memberId, ar.send_success AS sendSuccess,
+        ar.remark AS remark, a.type AS activityType, a.`name` AS activityName, a.start_time AS activityStartTime
+        FROM ac_activity AS a, ac_activity_remind AS ar
+        WHERE a.dr = 0 AND ar.dr = 0 AND a.id = ar.activity_id
+        AND ar.send_success = 0 AND a.`status` = 2
+        AND a.start_time BETWEEN NOW( ) AND DATE_ADD( NOW( ), INTERVAL 10 MINUTE )
+    </select>
+
+
+</mapper>

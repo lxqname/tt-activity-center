@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--客户映射 指定到dao接口 -->
+<mapper namespace="com.deepexi.activity.mapper.BoostRecordMapper">
+    <sql id="Base_Column_List">
+      id,      member_activity_id,      boost_member_id,      tenant_code,      created_at,      created_by,      updated_at,      updated_by,      version,      dr
+    </sql>
+
+    <update id="deleteByIds">
+        UPDATE ac_boost_record SET dr = 1, updated_at = NOW( ), updated_by = #{updateBy} WHERE dr = 0 AND id IN
+        <foreach collection="idList" index="index" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <select id="findList" resultType="com.deepexi.activity.domain.dto.BoostRecordDto">
+        SELECT <include refid="Base_Column_List"/> FROM ac_boost_record
+        <where>
+            <if test="query.dr != null and query.dr != ''">
+                AND dr = #{query.dr}
+            </if>
+            <if test="query.tenantCode != null and query.tenantCode != ''">
+                AND `tenant_code` = #{query.tenantCode}
+            </if>
+            <if test="query.memberActivityId != null and query.memberActivityId != ''">
+                AND `member_activity_id` = #{query.memberActivityId}
+            </if>
+            <if test="query.boostMemberId != null and query.boostMemberId != ''">
+                AND `boost_member_id` = #{query.boostMemberId}
+            </if>
+        </where>
+    </select>
+
+    <select id="count" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM ac_boost_record
+        <where>
+            <if test="query.dr != null and query.dr != ''">
+                AND dr = #{query.dr}
+            </if>
+            <if test="query.tenantCode != null and query.tenantCode != ''">
+                AND `tenant_code` = #{query.tenantCode}
+            </if>
+            <if test="query.memberActivityId != null and query.memberActivityId != ''">
+                AND `member_activity_id` = #{query.memberActivityId}
+            </if>
+            <if test="query.boostMemberId != null and query.boostMemberId != ''">
+                AND `boost_member_id` = #{query.boostMemberId}
+            </if>
+        </where>
+    </select>
+
+
+</mapper>
